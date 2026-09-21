@@ -19,10 +19,24 @@ from utils import (
 )
 
 # ── Paths (relative to project root, works from any cwd) ─────────────────────
-_HERE      = os.path.dirname(__file__)
-_ROOT      = os.path.join(_HERE, "..")
-DATA_PATH  = os.path.join(_ROOT, "data",    "Player_data.csv")
-MODEL_PATH = os.path.join(_ROOT, "outputs", "Player_data_model.joblib")
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
+def _find_file(*relative_paths: str) -> str:
+    """Search for a file by trying paths relative to the script directory,
+    then walking up towards the repo root, then the process cwd.
+    Returns the first path where the file exists, or the last candidate."""
+    candidates = []
+    for rel in relative_paths:
+        candidates.append(os.path.join(_HERE, rel))
+        candidates.append(os.path.join(_HERE, "..", rel))
+        candidates.append(os.path.join(os.getcwd(), rel))
+    for c in candidates:
+        if os.path.exists(c):
+            return os.path.normpath(c)
+    return os.path.normpath(candidates[0])
+
+DATA_PATH  = _find_file("data/Player_data.csv")
+MODEL_PATH = _find_file("outputs/Player_data_model.joblib")
 
 # ── Auto-update from Kaggle ───────────────────────────────────────────────────
 def _try_kaggle_update() -> str:
@@ -46,7 +60,7 @@ def _try_kaggle_update() -> str:
         if not candidates:
             return "kaggle: no CSV found in download"
         src = candidates[0]
-        os.makedirs(os.path.join(_ROOT, "data"), exist_ok=True)
+        os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
         shutil.copy2(src, DATA_PATH)
         return f"kaggle: updated from {os.path.basename(src)}"
     except ImportError:
@@ -555,7 +569,7 @@ with t_ml:
         unsafe_allow_html=True,
     )
 
-    chart_dir = os.path.join(_ROOT, "outputs", "charts")
+    chart_dir = _find_file("outputs/charts")
 
     def _show_chart(name, caption):
         p = os.path.join(chart_dir, name)
