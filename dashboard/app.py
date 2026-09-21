@@ -42,12 +42,26 @@ MODEL_PATH = _find_file("outputs/Player_data_model.joblib")
 def _try_kaggle_update() -> str:
     """
     Download the latest dataset from Kaggle using kagglehub.
+    Injects credentials from st.secrets if present (works on Streamlit Cloud).
     Returns a status string shown in the sidebar.
     Falls back silently if kagglehub is not installed or credentials
     are not configured.
     """
     try:
         import kagglehub
+
+        # Inject credentials from st.secrets so this works on Streamlit Cloud
+        # without a local ~/.kaggle/kaggle.json
+        try:
+            os.environ.setdefault(
+                "KAGGLE_USERNAME", st.secrets["kaggle"]["username"]
+            )
+            os.environ.setdefault(
+                "KAGGLE_KEY", st.secrets["kaggle"]["key"]
+            )
+        except (KeyError, FileNotFoundError):
+            pass  # no secrets configured — rely on local kaggle.json
+
         dl_path = kagglehub.dataset_download(
             "hubertsidorowicz/football-players-stats-2026-2027"
         )
@@ -64,7 +78,7 @@ def _try_kaggle_update() -> str:
         shutil.copy2(src, DATA_PATH)
         return f"kaggle: updated from {os.path.basename(src)}"
     except ImportError:
-        return "kagglehub not installed (pip install kagglehub)"
+        return "kagglehub not installed — add it to requirements.txt"
     except Exception as e:
         return f"kaggle update skipped: {e}"
 
@@ -109,8 +123,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Data loading (cached) ─────────────────────────────────────────────────────
-@st.cache_data(show_spinner="Loading & cleaning data …")
+_CACHE_TTL = 6 * 3600  # refresh every 6 hours
+
+@st.cache_data(show_spinner="Loading & cleaning data …", ttl=_CACHE_TTL)
 def get_data():
+    """Load data, pulling the latest CSV from Kaggle first if credentials exist."""
+    _try_kaggle_update()          # no-op if kagglehub/credentials not available
     raw = load_raw_data(DATA_PATH)
     return clean_data(raw)
 
@@ -155,16 +173,14 @@ with st.sidebar:
             f"<div style='color:#8b949e;font-size:.74rem;'>Last updated: {last_updated}</div>",
             unsafe_allow_html=True,
         )
+    st.markdown(
+        "<div style='color:#8b949e;font-size:.74rem;'>Auto-refreshes every 6 hours.</div>",
+        unsafe_allow_html=True,
+    )
 
-    if st.button("⬇️ Pull latest from Kaggle", use_container_width=True):
-        with st.spinner("Downloading from Kaggle..."):
-            status = _try_kaggle_update()
-        if status.startswith("kaggle: updated"):
-            st.success(status)
-            st.cache_data.clear()   # force data reload
-            st.rerun()
-        else:
-            st.warning(status)
+    if st.button("⬇️ Force refresh now", use_container_width=True):
+        st.cache_data.clear()   # expire cache → get_data() will re-pull from Kaggle
+        st.rerun()
 
     st.markdown("---")
     st.markdown(

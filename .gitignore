@@ -1,0 +1,16 @@
+﻿# Secrets — never commit
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Outputs (large artefacts)
+outputs/*.joblib
+outputs/charts/
