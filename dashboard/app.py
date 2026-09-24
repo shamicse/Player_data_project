@@ -1,7 +1,7 @@
 """
-Shami_akhtar_player_data_project.py  —  Player Data 2026/27 · Football Analytics Dashboard
+app.py  —  Player Data 2026/27 · Football Analytics Dashboard
 Streamlit web application — run with:
-  streamlit run dashboard/Shami_akhtar_player_data_project.py
+  streamlit run dashboard/app.py
 
 All data utilities and ML modeling logic are inlined below in clearly
 marked sections so the entire dashboard lives in a single file.
@@ -421,7 +421,7 @@ def predict_single(model_bundle: dict, row: pd.Series) -> dict:
     return {"prediction": int(pred), "probability": round(float(proba), 4)}
 
 
-# CLI entry-point: python dashboard/Shami_akhtar_player_data_project.py  (trains & saves the model)
+# CLI entry-point: python dashboard/app.py  (trains & saves the model)
 if __name__ == "__main__":
     print("[app] Loading data …")
     df_raw   = load_raw_data(DATA_PATH)
@@ -942,7 +942,7 @@ with t_ml:
     st.markdown('<div class="tab-title">🤖 Predictive Model — High Performer Classifier</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="sub-txt">Random Forest trained to predict whether an outfield player is a '
-        'high-performer (top-25% G+A per 90). Run <code>python dashboard/Shami_akhtar_player_data_project.py</code> from the '
+        'high-performer (top-25% G+A per 90). Run <code>python dashboard/app.py</code> from the '
         'project root to train & save the model.</div>',
         unsafe_allow_html=True,
     )
@@ -955,7 +955,7 @@ with t_ml:
             st.image(p, caption=caption, use_container_width=True)
 
     if model_bundle is None:
-        st.warning("⚠️ Model not yet trained. Run `python dashboard/Shami_akhtar_player_data_project.py` from the project root, then refresh.")
+        st.warning("⚠️ Model not yet trained. Run `python dashboard/app.py` from the project root, then refresh.")
     else:
         mb = model_bundle
         c1, c2, c3 = st.columns(3)
